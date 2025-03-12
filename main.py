@@ -37,6 +37,7 @@ def assitant(api_key, api_version, azure_endpoint, deployment_name):
 
 
 st.title("💬 Chatbot")
+
 if "messages" not in st.session_state:
     st.session_state.messages = [
         {"role": "assistant", "content": "How can I help you?"}
@@ -57,9 +58,8 @@ if prompt := st.chat_input(accept_file="multiple"):
         for file in prompt["files"]:
             st.markdown(f"📎 **{file.name}**")
         st.write(prompt["text"])
-    response = ai_assitant.chat(prompt["text"], uploaded_file_ids)
-    final_text_message = response[0].content[0].text.value
-    st.session_state.messages.append(
-        {"role": "assistant", "content": final_text_message}
+    ai_assitant.chat(
+        prompt["text"],
+        uploaded_file_ids,
+        placeholder=st.chat_message("assistant").empty(),
     )
-    st.chat_message("assistant").markdown(final_text_message)

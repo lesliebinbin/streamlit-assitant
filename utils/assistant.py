@@ -1,5 +1,27 @@
-from openai import AzureOpenAI
+from openai import AzureOpenAI, AssistantEventHandler
 from typing import IO
+from typing_extensions import override
+import streamlit as st
+import numpy as np
+
+
+class EventHandler(AssistantEventHandler):
+    def __init__(self, placeholder):
+        super().__init__()
+        self._placeholder = placeholder
+
+    @override
+    def on_message_delta(self, delta, snapshot):
+        if self._placeholder:
+            self._placeholder.write(snapshot.content[0].text.value)
+
+    @override
+    def on_message_done(self, message):
+        st.session_state.messages.append(
+            {"role": "assistant", "content": message.content[0].text.value}
+        )
+        if self._placeholder:
+            self._placeholder.markdown(message.content[0].text.value)
 
 
 class AzureOpenAIAssitant:
@@ -28,14 +50,13 @@ class AzureOpenAIAssitant:
     def client(self):
         return self._client
 
-
     def upload_files(self, files: list[IO]):
         return [
             self._client.files.create(file=file, purpose="assistants").id
             for file in files
         ]
 
-    def chat(self, prompt: str, attachment_ids: list[str] = None):
+    def chat(self, prompt: str, attachment_ids: list[str] = None, placeholder=None):
         self._client.beta.threads.messages.create(
             thread_id=self._thread.id,
             content=prompt,
@@ -46,7 +67,8 @@ class AzureOpenAIAssitant:
             ],
         )
         with self._client.beta.threads.runs.stream(
-            thread_id=self._thread.id, assistant_id=self._assitant.id
+            thread_id=self._thread.id,
+            assistant_id=self._assitant.id,
+            event_handler=EventHandler(placeholder=placeholder),
         ) as stream:
             stream.until_done()
-        return stream.get_final_messages()
