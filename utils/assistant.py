@@ -36,7 +36,7 @@ class AzureOpenAIAssitant:
         ]
 
     def chat(self, prompt: str, attachment_ids: list[str] = None):
-        self._client.beta.messages.create(
+        self._client.beta.threads.messages.create(
             thread_id=self._thread.id,
             content=prompt,
             role="user",
@@ -46,7 +46,7 @@ class AzureOpenAIAssitant:
             ],
         )
         with self._client.beta.threads.runs.stream(
-            thread_id=self._thread.id, assitant_id=self._assitant.id
+            thread_id=self._thread.id, assistant_id=self._assitant.id
         ) as stream:
             stream.until_done()
-            return stream.get_final_messages()
+        return stream.get_final_messages()
